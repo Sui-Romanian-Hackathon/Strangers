@@ -127,13 +127,26 @@ module supplychain::supplychain {
         AdminCap { id: new_uid(ctx) }
     }
 
-    public fun create_shop(name: string::String, ctx: &mut TxContext): Shop {
+    public fun create_shop_internal(
+        name: string::String,
+        ctx: &mut TxContext
+    ): Shop {
         Shop {
-            id: new_uid(ctx),
+            id: object::new(ctx),
             name,
             owner: sender(ctx),
             inventory: Inventory { items: vector::empty<Item>() }
         }
+    }
+
+     entry fun create_shop(
+        name: string::String,
+        ctx: &mut TxContext
+    ) {
+        let shop = create_shop_internal(name, ctx);
+
+        // Transfer to sender so the object is returned to the user
+        transfer::transfer(shop, sender(ctx));
     }
 
     //

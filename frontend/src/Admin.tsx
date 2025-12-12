@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import type { Store } from "./App";
 import { SUPPLIER_IMAGES } from "./assets";
 
@@ -12,6 +13,20 @@ export default function Admin({
 }) {
   const [name, setName] = useState("");
   const [shelves, setShelves] = useState(3);
+  const account = useCurrentAccount();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+
+  async function createShopChain() {
+    if (!account) return alert("Connect wallet first");
+    if (!name) return alert("Enter a store name first");
+    try {
+      const { createShopOnChain } = await import("./supplychainClient");
+      const res = await createShopOnChain(signAndExecuteTransaction, name);
+      alert("Transaction submitted: " + JSON.stringify(res));
+    } catch (e: any) {
+      alert("Error creating shop on-chain: " + (e?.message ?? String(e)));
+    }
+  }
 
   return (
     <div>
@@ -25,6 +40,7 @@ export default function Admin({
             <input value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Store name" style={{ padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
             <input type="number" min={1} value={shelves} onChange={(e: any) => setShelves(Number(e.target.value))} style={{ width: 80, padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
             <Button onClick={() => { if (!name) return; onAddStore(name, Math.max(1, shelves)); setName(""); }}>Add Store</Button>
+            <Button onClick={createShopChain} style={{ marginLeft: 8 }}>Create Shop on-chain</Button>
           </label>
         </div>
       </div>
