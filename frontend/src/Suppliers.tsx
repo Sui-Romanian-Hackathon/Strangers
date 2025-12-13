@@ -7,7 +7,7 @@ import type { Store, Item } from "./App";
 import type { SupplierItem, BatchOffer } from "./types";
 import catalog from "./catalog.json";
 import { SUPPLIER_IMAGES } from "./assets";
-import { createEscrowOrder } from "./supplychainClient";
+import { createEscrowOrder, addItemToChain, loadStoresFromChain } from "./supplychainClient";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 export default function Suppliers({
@@ -51,6 +51,17 @@ export default function Suppliers({
   const categories = Array.from(new Set(suppliers.map((s) => s.category)));
   const [activeCategory, setActiveCategory] = useState(categories[0] ?? null);
 
+  // Map supplier names to Move supplier IDs
+  function getSupplierMoveId(supplierName: string): number {
+    const nameMap: { [key: string]: number } = {
+      "Apple": 1,
+      "Orange": 1,
+      "Milk": 2,
+      "Battery Pack": 3,
+    };
+    return nameMap[supplierName] || 1; // Default to 1 if not found
+  }
+
   function allowDrop(e: React.DragEvent) {
     e.preventDefault();
   }
@@ -75,13 +86,59 @@ export default function Suppliers({
 
     const rawPrice = window.prompt(`Enter price for store (default ${sup.unitCost}):`, String(sup.unitCost));
     if (!rawPrice) return;
-    const p = Number(rawPrice);
+    const p = Math.floor(Number(rawPrice));
     if (!p || p < 0) return alert("Invalid price");
 
-    const item: Item = { id: `${Date.now()}-${Math.random()}`, name: sup.name, price: p, quantity: q, supplier: sup.id };
-    onBuy(storeId, shelfId, item);
-    setSuppliers((prev) => prev.map((s) => (s.id === supId ? { ...s, qty: s.qtyAvailable - q } : s)));
-    setDragging(null);
+    // Reload stores from chain first to get valid on-chain object IDs
+    if (!account?.address) {
+      alert("Connect wallet first");
+      setDragging(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const freshStores = await loadStoresFromChain(account.address);
+        console.log("Fresh stores from chain:", freshStores);
+        const store = freshStores.find(s => s.id === storeId);
+        console.log("Selected store:", store, "storeId:", storeId);
+        const shelf = store?.shelves.find(sh => sh.id === shelfId);
+        const shelfIndex = store ? store.shelves.indexOf(shelf!) : 0;
+
+        if (!store) {
+          alert("Store not found on-chain. Create it in Admin tab first.");
+          setDragging(null);
+          return;
+        }
+
+        console.log("Calling addItemToChain with:", { shopObjId: store.id, shelfIndex, itemName: sup.name, supplierId: getSupplierMoveId(sup.name), price: p, quantity: q });
+
+        // Verify shop object format
+        if (!store.id.startsWith("0x")) {
+          alert("Invalid shop object ID format");
+          setDragging(null);
+          return;
+        }
+
+        await addItemToChain(
+          signAndExecuteTransaction,
+          store.id,
+          shelfIndex,
+          sup.name,
+          getSupplierMoveId(sup.name),
+          p,
+          q
+        );
+
+        alert("Item added to shelf on-chain!");
+        setSuppliers((prev) => prev.map((s) => (s.id === supId ? { ...s, qtyAvailable: s.qtyAvailable - q } : s)));
+      } catch (err) {
+        console.error("Failed to add item:", err);
+        alert("Failed to add item on-chain");
+      } finally {
+        setDragging(null);
+      }
+    })();
   }
 
   function applyDiscount(sup: SupplierItem, qty: number): number {
@@ -312,38 +369,59 @@ export default function Suppliers({
           <input type="number" value={orderInputs[sup.id]?.qty ?? 1} min={1} onChange={(e) => setOrderInputs(prev => ({ ...prev, [sup.id]: { ...prev[sup.id], qty: Number(e.target.value) || 0 } }))} style={{ width: 70 }} />
           <input type="number" value={orderInputs[sup.id]?.price ?? sup.baseRetailPrice} onChange={(e) => setOrderInputs(prev => ({ ...prev, [sup.id]: { ...prev[sup.id], price: Number(e.target.value) || 0 } }))} style={{ width: 80 }} />
 
-          <Button onClick={() => {
+          <Button onClick={async () => {
             if (!selectedStore || !selectedShelf) return alert("Select store & shelf");
+            if (!account?.address) return alert("Connect wallet first");
 
             const qty = orderInputs[sup.id]?.qty ?? 1;
-            const price = orderInputs[sup.id]?.price ?? sup.baseRetailPrice;
+            const price = Math.floor(orderInputs[sup.id]?.price ?? sup.baseRetailPrice);
 
             if (qty <= 0 || qty > sup.qtyAvailable) return alert("Invalid qty");
 
-            const discount = applyDiscount(sup, qty);
-            const unitCostPaid = sup.unitCost * (1 - discount / 100);
+            try {
+              // Reload stores from chain to get valid on-chain object IDs
+              const freshStores = await loadStoresFromChain(account.address);
+              console.log("Fresh stores from chain:", freshStores);
+              const store = freshStores.find(s => s.id === selectedStore);
+              console.log("Selected store:", store, "selectedStore:", selectedStore);
+              if (!store) return alert("Store not found on-chain. Create it in Admin tab first.");
+              const shelf = store.shelves.find(sh => sh.id === selectedShelf);
+              const shelfIndex = shelf ? store.shelves.indexOf(shelf) : 0;
 
-            const item: Item = {
-              id: crypto.randomUUID(),
-              name: sup.name,
-              quantity: qty,
-              price,
-              supplier: sup.id,
-              unitCost: unitCostPaid,
-              discountAppliedPct: discount,
-            };
+              console.log("Calling addItemToChain with:", { shopObjId: store.id, shelfIndex, itemName: sup.name, supplierId: getSupplierMoveId(sup.name), price, quantity: qty });
 
-            onBuy(selectedStore, selectedShelf, item);
+              // Verify shop object format
+              if (!store.id.startsWith("0x")) {
+                alert("Invalid shop object ID format");
+                return;
+              }
 
-            setSuppliers(prev =>
-              prev.map(s =>
-                s.id === sup.id
-                  ? { ...s, qtyAvailable: s.qtyAvailable - qty }
-                  : s
-              )
-            );
+              // Add item on-chain
+              await addItemToChain(
+                signAndExecuteTransaction,
+                store.id,
+                shelfIndex,
+                sup.name,
+                getSupplierMoveId(sup.name),
+                price,
+                qty
+              );
 
-            setExpanded(null);
+              alert("Item added to shelf on-chain!");
+
+              setSuppliers(prev =>
+                prev.map(s =>
+                  s.id === sup.id
+                    ? { ...s, qtyAvailable: s.qtyAvailable - qty }
+                    : s
+                )
+              );
+
+              setExpanded(null);
+            } catch (err) {
+              console.error("Failed to add item:", err);
+              alert("Failed to add item on-chain");
+            }
           }}>
             Confirm
           </Button>

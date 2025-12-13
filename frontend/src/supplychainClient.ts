@@ -126,6 +126,55 @@ export async function buyItemOnChain(signAndExecute: any, shopObjId: string, ite
   return signAndExecute({ transaction: tx });
 }
 
+export async function addItemToChain(
+  signAndExecute: any,
+  shopObjId: string,
+  shelfIndex: number,
+  itemName: string,
+  supplierId: number,
+  price: number,
+  quantity: number,
+  threshold: number = 5,
+  restockAmount: number = 10
+) {
+  if (!signAndExecute) throw new Error("No signer provided");
+  if (!SUPPLYCHAIN_MODULE) {
+    throw new Error("Set SUPPLYCHAIN_MODULE in frontend/src/supplychainConfig.ts to the deployed module address");
+  }
+
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${SUPPLYCHAIN_MODULE}::supplychain::add_item`,
+    arguments: [
+      tx.object(shopObjId),
+      tx.pure.u64(shelfIndex),
+      tx.pure.string(itemName),
+      tx.pure.u64(supplierId),
+      tx.pure.u64(price),
+      tx.pure.u64(quantity),
+      tx.pure.u64(threshold),
+      tx.pure.u64(restockAmount),
+    ],
+  });
+
+  return new Promise((resolve, reject) => {
+    signAndExecute(
+      { transaction: tx },
+      {
+        onSuccess: (result: any) => {
+          console.log("Add item transaction succeeded:", result);
+          resolve(result);
+        },
+        onError: (err: any) => {
+          console.error("Add item transaction error:", JSON.stringify(err, null, 2));
+          console.error("Full error object:", err);
+          reject(err);
+        },
+      }
+    );
+  });
+}
+
 //
 // ESCROW & DEFI FUNCTIONS
 //
