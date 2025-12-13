@@ -4,7 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 // Minimal client helpers to call the Move functions in the `supplychain` module.
 // These functions expect a signAndExecute function from useSignAndExecuteTransaction hook.
 
-export async function createShopOnChain(signAndExecute: any, name: string) {
+export async function createShopOnChain(signAndExecute: any, name: string, shelvesnr: number) {
   if (!signAndExecute) throw new Error("No signer provided");
   if (!SUPPLYCHAIN_MODULE) {
     throw new Error("Set SUPPLYCHAIN_MODULE in frontend/src/supplychainConfig.ts to the deployed module address");
@@ -13,8 +13,12 @@ export async function createShopOnChain(signAndExecute: any, name: string) {
   const tx = new Transaction();
   tx.moveCall({
     target: `${SUPPLYCHAIN_MODULE}::supplychain::create_shop`,
-    arguments: [tx.pure.string(name)],
+    arguments: [
+    tx.pure.string(name),  
+    tx.pure.u64(shelvesnr),
+    ],
   });
+  
 
   return signAndExecute({ transaction: tx });
 }

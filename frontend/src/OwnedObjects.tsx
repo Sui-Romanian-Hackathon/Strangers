@@ -6,8 +6,21 @@ import { SUPPLYCHAIN_MODULE } from "./supplychainConfig";
 interface Store {
   id: string;
   name: string | null;
+  shelves: Shelf[];
 }
 
+interface Shelf{
+  items: Item[];
+}
+
+export interface Item {                
+  name: string;              
+  supplierId: number;       
+  price: number;             
+  quantity: number;         
+  threshold: number;         
+  restockAmount: number;     
+}
 
 export function OwnedObjects() {
   const account = useCurrentAccount();
@@ -78,10 +91,12 @@ export function OwnedObjects() {
 
         // Extract name if present
         const name = fields?.name ?? null;
+        const shelves = fields?.shelves ?? null;
 
         results.push({
           id,
           name,
+          shelves,
         });
       }
 
@@ -107,6 +122,7 @@ export function OwnedObjects() {
         <Flex key={store.id} direction="column" mb="2">
           <Text>Object ID: {store.id}</Text>
           <Text>Name: {store.name ?? "No name field"}</Text>
+          <Text>Shelves: {store.shelves ? store.shelves.length : "No shelves field"}</Text>
         </Flex>
       ))}
     </Flex>

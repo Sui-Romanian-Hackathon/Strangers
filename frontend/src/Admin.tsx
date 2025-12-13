@@ -21,7 +21,7 @@ export default function Admin({
     if (!name) return alert("Enter a store name first");
     try {
       const { createShopOnChain } = await import("./supplychainClient");
-      const res = await createShopOnChain(signAndExecuteTransaction, name);
+      const res = await createShopOnChain(signAndExecuteTransaction, name, shelves);
       alert("Transaction submitted: " + JSON.stringify(res));
     } catch (e: any) {
       alert("Error creating shop on-chain: " + (e?.message ?? String(e)));

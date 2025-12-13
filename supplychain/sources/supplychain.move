@@ -1,17 +1,7 @@
-/*
-/// Module: supplychain
-module supplychain::supplychain;
-*/
-
-// For Move coding conventions, see
-// https://docs.sui.io/concepts/sui-move-concepts/conventions
-
-
 module supplychain::supplychain {
-    use sui::object::{UID, new as new_uid};
-    use sui::tx_context::{TxContext, sender};
+    use sui::object::{new as new_uid};
     use sui::event::emit;
-    use std::vector;
+    use sui::tx_context::{TxContext, sender};
     use std::string;
 
     //
@@ -37,11 +27,10 @@ module supplychain::supplychain {
     //
     // OBJECTS
     //
-    public struct AdminCap has key {
-        id: UID,
-    }
+    public struct AdminCap has key { id: UID }
 
-    public struct Item has store, copy, drop {
+    public struct Item has key, store {
+        id: UID,
         name: vector<u8>,
         supplier_id: u64,
         price: u64,
@@ -50,19 +39,20 @@ module supplychain::supplychain {
         restock_amount: u64,
     }
 
-    public struct Inventory has store {
-        items: vector<Item>
+    public struct Shelf has key, store {
+        id: UID,
+        items: vector<Item>,
     }
 
     public struct Shop has key {
         id: UID,
         name: string::String,
         owner: address,
-        inventory: Inventory,
+        shelves: vector<Shelf>,
     }
 
     //
-    // EVENTS (require store + copy + drop)
+    // EVENTS
     //
     public struct PurchaseEvent has store, copy, drop {
         shop_addr: address,
@@ -81,7 +71,6 @@ module supplychain::supplychain {
     //
     // HELPERS
     //
-
     fun string_to_bytes(s: &string::String): vector<u8> {
         let bytes_ref = string::as_bytes(s);
         let len = vector::length(bytes_ref);
@@ -95,8 +84,6 @@ module supplychain::supplychain {
         v
     }
 
-
-
     fun needs_restock(item: &Item): bool {
         item.quantity < item.threshold
     }
@@ -104,15 +91,11 @@ module supplychain::supplychain {
     fun find_item_index(items: &vector<Item>, name: &vector<u8>): u64 {
         let len = vector::length(items);
         let mut i = 0;
-
         while (i < len) {
             let it = vector::borrow(items, i);
-            if (it.name == *name) {
-                return i;
-            };
+            if (it.name == *name) { return i };
             i = i + 1;
         };
-
         abort E_ITEM_NOT_FOUND
     }
 
@@ -121,40 +104,72 @@ module supplychain::supplychain {
     }
 
     //
-    // OBJECT CREATION (NO ENTRY)
+    // OBJECT CREATION
     //
     public fun create_admin(ctx: &mut TxContext): AdminCap {
         AdminCap { id: new_uid(ctx) }
     }
 
+    public fun create_shelf(ctx: &mut TxContext): Shelf {
+        Shelf { id: object::new(ctx), items: vector::empty<Item>() }
+    }
+
+    public fun create_item(
+        name: string::String,
+        supplier_id: u64,
+        price: u64,
+        quantity: u64,
+        threshold: u64,
+        restock_amount: u64,
+        ctx: &mut TxContext
+    ): Item {
+        Item {
+            id: object::new(ctx),
+            name: string_to_bytes(&name),
+            supplier_id,
+            price,
+            quantity,
+            threshold,
+            restock_amount,
+        }
+    }
+
     public fun create_shop_internal(
         name: string::String,
+        shelvesnr: u64,
         ctx: &mut TxContext
     ): Shop {
+        let mut shelves = vector::empty<Shelf>();
+        let mut i = 0;
+        while (i < shelvesnr) {
+            let shelf = create_shelf(ctx);
+            vector::push_back(&mut shelves, shelf);
+            i = i + 1;
+        };
         Shop {
             id: object::new(ctx),
             name,
             owner: sender(ctx),
-            inventory: Inventory { items: vector::empty<Item>() }
+            shelves,
         }
     }
 
-     entry fun create_shop(
+    entry fun create_shop(
         name: string::String,
+        shelvesnr: u64,
         ctx: &mut TxContext
     ) {
-        let shop = create_shop_internal(name, ctx);
-
-        // Transfer to sender so the object is returned to the user
+        let shop = create_shop_internal(name, shelvesnr, ctx);
         transfer::transfer(shop, sender(ctx));
     }
 
     //
     // MODIFY SHOP
     //
-    public fun add_item(
+    entry fun add_item(
         shop: &mut Shop,
-        name: &string::String,
+        shelf_index: u64,
+        name: string::String,
         supplier_id: u64,
         price: u64,
         quantity: u64,
@@ -165,30 +180,24 @@ module supplychain::supplychain {
         assert_only_owner(shop, sender(ctx));
         assert!(is_valid_supplier(supplier_id), E_INVALID_SUPPLIER);
 
-        let item = Item {
-            name: string_to_bytes(name),
-            supplier_id,
-            price,
-            quantity,
-            threshold,
-            restock_amount
-        };
-
-        vector::push_back(&mut shop.inventory.items, item);
+        let item = create_item(name, supplier_id, price, quantity, threshold, restock_amount, ctx);
+        let shelf_ref = vector::borrow_mut(&mut shop.shelves, shelf_index);
+        vector::push_back(&mut shelf_ref.items, item);
     }
 
-    public fun buy_item(
+    entry fun buy_item(
         shop: &mut Shop,
-        name: &string::String,
+        shelf_index: u64,
+        name: string::String,
         qty: u64,
         ctx: &mut TxContext
     ) {
-        let name_bytes = string_to_bytes(name);
-        let idx = find_item_index(&shop.inventory.items, &name_bytes);
+        let shelf_ref = vector::borrow_mut(&mut shop.shelves, shelf_index);
+        let name_bytes = string_to_bytes(&name);
+        let idx = find_item_index(&shelf_ref.items, &name_bytes);
+        let item_ref = vector::borrow_mut(&mut shelf_ref.items, idx);
 
-        let item_ref = vector::borrow_mut(&mut shop.inventory.items, idx);
         assert!(item_ref.quantity >= qty, E_INSUFFICIENT_QUANTITY);
-
         item_ref.quantity = item_ref.quantity - qty;
         let total = item_ref.price * qty;
 
@@ -203,7 +212,7 @@ module supplychain::supplychain {
         if (needs_restock(item_ref)) {
             emit(RestockEvent {
                 shop_addr: shop.owner,
-                item_name: string_to_bytes(name),
+                item_name: string_to_bytes(&name),
                 new_quantity: item_ref.quantity
             });
         }
@@ -211,16 +220,17 @@ module supplychain::supplychain {
 
     public fun restock_manual(
         shop: &mut Shop,
-        name: &string::String,
+        shelf_index: u64,
+        name: string::String,
         amount: u64,
         ctx: &mut TxContext
     ) {
         assert_only_owner(shop, sender(ctx));
+        let shelf_ref = vector::borrow_mut(&mut shop.shelves, shelf_index);
+        let name_bytes = string_to_bytes(&name);
+        let idx = find_item_index(&shelf_ref.items, &name_bytes);
+        let item_ref = vector::borrow_mut(&mut shelf_ref.items, idx);
 
-        let name_bytes = string_to_bytes(name);
-        let idx = find_item_index(&shop.inventory.items, &name_bytes);
-
-        let item_ref = vector::borrow_mut(&mut shop.inventory.items, idx);
         item_ref.quantity = item_ref.quantity + amount;
 
         emit(RestockEvent {
@@ -232,15 +242,16 @@ module supplychain::supplychain {
 
     public fun auto_restock(
         shop: &mut Shop,
-        name: &string::String,
+        shelf_index: u64,
+        name: string::String,
         ctx: &mut TxContext
     ) {
         assert_only_owner(shop, sender(ctx));
+        let shelf_ref = vector::borrow_mut(&mut shop.shelves, shelf_index);
+        let name_bytes = string_to_bytes(&name);
+        let idx = find_item_index(&shelf_ref.items, &name_bytes);
+        let item_ref = vector::borrow_mut(&mut shelf_ref.items, idx);
 
-        let name_bytes = string_to_bytes(name);
-        let idx = find_item_index(&shop.inventory.items, &name_bytes);
-
-        let item_ref = vector::borrow_mut(&mut shop.inventory.items, idx);
         assert!(needs_restock(item_ref), E_RESTOCK_NOT_NEEDED);
         assert!(is_valid_supplier(item_ref.supplier_id), E_INVALID_SUPPLIER);
 
