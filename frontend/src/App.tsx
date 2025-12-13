@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ConnectButton } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading, Button } from "@radix-ui/themes";
-import { WalletStatus } from "./WalletStatus";
+import { Heading } from "@radix-ui/themes";
 import Admin from "./Admin";
 import Suppliers from "./Suppliers";
 
@@ -33,73 +32,93 @@ function App() {
       id: `${Date.now()}-${i}`,
       items: [],
     }));
-    setStores((s) => [...s, { id: `${Date.now()}-${Math.random()}`, name, shelves }]);
+
+    setStores((s) => [
+      ...s,
+      { id: crypto.randomUUID(), name, shelves },
+    ]);
   }
 
   function addItemToShelf(storeId: string, shelfId: string, item: Item) {
     setStores((prev) =>
-      prev.map((st) => {
-        if (st.id !== storeId) return st;
-        return {
-          ...st,
-          shelves: st.shelves.map((sh) => {
-            if (sh.id !== shelfId) return sh;
-            // merge by name+price
-            const existing = sh.items.find((it) => it.name === item.name && it.price === item.price);
-            if (existing) {
-              return {
-                ...sh,
-                items: sh.items.map((it) =>
-                  it === existing ? { ...it, quantity: it.quantity + item.quantity } : it,
-                ),
-              };
+      prev.map((store) =>
+        store.id !== storeId
+          ? store
+          : {
+              ...store,
+              shelves: store.shelves.map((shelf) =>
+                shelf.id !== shelfId
+                  ? shelf
+                  : {
+                      ...shelf,
+                      items: shelf.items.some(
+                        (it) =>
+                          it.name === item.name && it.price === item.price
+                      )
+                        ? shelf.items.map((it) =>
+                            it.name === item.name &&
+                            it.price === item.price
+                              ? {
+                                  ...it,
+                                  quantity: it.quantity + item.quantity,
+                                }
+                              : it
+                          )
+                        : [...shelf.items, item],
+                    }
+              ),
             }
-            return { ...sh, items: [...sh.items, item] };
-          }),
-        };
-      }),
+      )
     );
   }
 
   return (
-    <>
-      <div className="app-header">
-        <div className="brand">dApp Starter Template</div>
-        <div>
+    <div className="app-shell">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="logo">📦 Inventory dApp</div>
+
+        <nav className="nav">
+          <button
+            className={`nav-item ${view === "admin" ? "active" : ""}`}
+            onClick={() => setView("admin")}
+          >
+            Dashboard
+          </button>
+          <button
+            className={`nav-item ${view === "suppliers" ? "active" : ""}`}
+            onClick={() => setView("suppliers")}
+          >
+            Suppliers
+          </button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="main">
+        <header className="topbar">
+          <Heading size="4">
+            {view === "admin" ? "Admin Dashboard" : "Suppliers"}
+          </Heading>
           <ConnectButton />
-        </div>
-      </div>
+        </header>
 
-      <div className="main-wrap">
-        <div className="layout">
-          <aside className="sidebar">
-            <div className="compact-card">
-              <WalletStatus />
-            </div>
-
-            <div className="compact-card">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontWeight: 700 }}>Pages</div>
-                <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-                  <button className={`nav-btn ${view === 'admin' ? 'primary' : ''}`} onClick={() => setView('admin')}>Admin</button>
-                  <button className={`nav-btn ${view === 'suppliers' ? 'primary' : ''}`} onClick={() => setView('suppliers')}>Suppliers</button>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <main className="content">
-            <div className="card">
-              {view === 'admin' ? (
-                <Admin stores={stores} setStores={setStores} />
-              ) : (
-                <Suppliers stores={stores} onBuy={(storeId, shelfId, item) => addItemToShelf(storeId, shelfId, item)} />
-              )}
-            </div>
-          </main>
-        </div>
-      </div>
-    </>
+        <section className="content">
+          <div className="card">
+            {view === "admin" ? (
+              <Admin stores={stores} setStores={setStores} />
+            ) : (
+              <Suppliers
+                stores={stores}
+                onBuy={(storeId, shelfId, item) =>
+                  addItemToShelf(storeId, shelfId, item)
+                }
+              />
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
 
