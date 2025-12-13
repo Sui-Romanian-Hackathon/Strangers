@@ -1,27 +1,106 @@
 import { SUPPLYCHAIN_MODULE } from "./supplychainConfig";
 import { Transaction } from "@mysten/sui/transactions";
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { Store } from "./App";
 
-// Minimal client helpers to call the Move functions in the `supplychain` module.
-// These functions expect a signAndExecute function from useSignAndExecuteTransaction hook.
 
-export async function createShopOnChain(signAndExecute: any, name: string, shelvesnr: number) {
-  if (!signAndExecute) throw new Error("No signer provided");
-  if (!SUPPLYCHAIN_MODULE) {
-    throw new Error("Set SUPPLYCHAIN_MODULE in frontend/src/supplychainConfig.ts to the deployed module address");
+export const suiClient = new SuiClient({
+  url: getFullnodeUrl('testnet'),
+});
+
+export async function loadStoresFromChain(owner: string): Promise<Store[]> {
+  const objects = await suiClient.getOwnedObjects({
+    owner,
+    options: {
+      showContent: true,
+    },
+  });
+
+  const stores = objects.data
+    .map(o => o.data?.content)
+    .filter(
+      (c: any) =>
+        c?.type === `${SUPPLYCHAIN_MODULE}::supplychain::Store`
+    )
+    .map((c: any) => ({
+      id: c.fields.id.id,
+      name: c.fields.name,
+      shelves: Array.from({ length: Number(c.fields.shelves) }).map(
+        (_, i) => ({
+          id: `${c.fields.id.id}-shelf-${i}`,
+          items: [],
+        })
+      ),
+    }));
+
+  return stores;
+}
+
+export async function createShopOnChain(
+  signAndExecuteTransaction: any,
+  name: string,
+  shelvesnr: number
+): Promise<{ digest: string }> {
+  if (!signAndExecuteTransaction) {
+    throw new Error("No signer provided");
   }
 
   const tx = new Transaction();
   tx.moveCall({
     target: `${SUPPLYCHAIN_MODULE}::supplychain::create_shop`,
     arguments: [
-    tx.pure.string(name),  
-    tx.pure.u64(shelvesnr),
+      tx.pure.string(name),
+      tx.pure.u64(shelvesnr),
     ],
   });
-  
 
-  return signAndExecute({ transaction: tx });
+  return new Promise((resolve, reject) => {
+    signAndExecuteTransaction(
+      {
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showEvents: true,
+          showInput: true,
+          showObjectChanges: true,
+        },
+      },
+      {
+        onSuccess: async (result: any) => {
+          console.log("FULL TX RESULT ↓↓↓");
+          console.dir(result, { depth: null });
+
+          const effects = result?.effects;
+          const status = effects?.status;
+
+          if (!effects) {
+            throw new Error("Transaction executed but no effects returned");
+          }
+
+          if (status && status.status !== "success") {
+            throw new Error(
+              status.error ??
+              "Transaction aborted (no detailed error available)"
+            );
+          }
+
+          if (!result?.digest) {
+            throw new Error("Transaction succeeded but digest is missing");
+          }
+
+          await suiClient.waitForTransaction({
+            digest: result.digest,
+          });
+
+          resolve(result);
+        },
+        onError: reject,
+      }
+    );
+  });
 }
+
+
 
 export async function buyItemOnChain(signAndExecute: any, shopObjId: string, itemName: string, qty: number) {
   if (!signAndExecute) throw new Error("No signer provided");

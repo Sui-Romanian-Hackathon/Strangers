@@ -91,7 +91,7 @@ function App() {
           <main className="content">
             <div className="card">
               {view === 'admin' ? (
-                <Admin stores={stores} onAddStore={addStore} />
+                <Admin stores={stores} setStores={setStores} />
               ) : (
                 <Suppliers stores={stores} onBuy={(storeId, shelfId, item) => addItemToShelf(storeId, shelfId, item)} />
               )}
