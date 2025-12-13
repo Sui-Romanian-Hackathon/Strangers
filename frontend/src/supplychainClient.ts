@@ -11,30 +11,38 @@ export const suiClient = new SuiClient({
 export async function loadStoresFromChain(owner: string): Promise<Store[]> {
   const objects = await suiClient.getOwnedObjects({
     owner,
-    options: {
-      showContent: true,
-    },
+    options: { showContent: true },
   });
 
-  const stores = objects.data
+  const shops = objects.data
     .map(o => o.data?.content)
-    .filter(
-      (c: any) =>
-        c?.type === `${SUPPLYCHAIN_MODULE}::supplychain::Store`
+    .filter((c: any) =>
+      c?.dataType === "moveObject" &&
+      typeof c.type === "string" &&
+      c.type.endsWith("::supplychain::Shop")
     )
     .map((c: any) => ({
       id: c.fields.id.id,
       name: c.fields.name,
-      shelves: Array.from({ length: Number(c.fields.shelves) }).map(
-        (_, i) => ({
-          id: `${c.fields.id.id}-shelf-${i}`,
-          items: [],
-        })
-      ),
+      shelves: (c.fields.shelves ?? []).map((s: any) => ({
+        id: s.fields.id.id,
+        items: (s.fields.items ?? []).map((it: any) => ({
+          id: it.fields.id.id,
+          name: new TextDecoder().decode(
+            Uint8Array.from(it.fields.name)
+          ),
+          quantity: Number(it.fields.quantity),
+          price: Number(it.fields.price),
+          supplier: Number(it.fields.supplier_id),
+        })),
+      })),
     }));
 
-  return stores;
+  console.log("Loaded stores from chain:", shops);
+  return shops;
 }
+
+
 
 export async function createShopOnChain(
   signAndExecuteTransaction: any,

@@ -44,11 +44,16 @@ module supplychain::supplychain {
         items: vector<Item>,
     }
 
-    public struct Shop has key {
+    public struct Shop has key, store {
         id: UID,
         name: string::String,
         owner: address,
         shelves: vector<Shelf>,
+    }
+
+    public struct ShopRegistry has key {
+        id: UID,
+        stores: vector<Shop>,
     }
 
     //
@@ -159,6 +164,7 @@ module supplychain::supplychain {
         shelvesnr: u64,
         ctx: &mut TxContext
     ) {
+        
         let shop = create_shop_internal(name, shelvesnr, ctx);
         transfer::transfer(shop, sender(ctx));
     }
@@ -263,4 +269,38 @@ module supplychain::supplychain {
             new_quantity: item_ref.quantity
         });
     }
+
+    //
+    // GETTERS
+    //
+    public fun get_shop_name(shop: &Shop): string::String {
+        shop.name
+    }
+
+    public fun get_shop_owner(shop: &Shop): address {
+        shop.owner
+    }
+
+    public fun get_shelves_count(shop: &Shop): u64 {
+        vector::length(&shop.shelves)
+    }
+
+    public fun get_shelf(shop: &Shop, shelf_index: u64): &Shelf {
+        vector::borrow(&shop.shelves, shelf_index)
+    }
+
+    public fun get_items_count(shelf: &Shelf): u64 {
+        vector::length(&shelf.items)
+    }
+
+    public fun get_item(shelf: &Shelf, item_index: u64): &Item {
+        vector::borrow(&shelf.items, item_index)
+    }
+
+    public fun get_item_by_name(shelf: &Shelf, name: string::String): &Item {
+        let name_bytes = string_to_bytes(&name);
+        let idx = find_item_index(&shelf.items, &name_bytes);
+        vector::borrow(&shelf.items, idx)
+    }
+
 }

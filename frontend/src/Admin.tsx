@@ -22,19 +22,16 @@ export default function Admin({
 
   useEffect(() => {
   if (!account) return;
-
+    console.log("Loading stores");
   (async () => {
-    try {
-      const { loadStoresFromChain } = await import("./supplychainClient");
-
-      const chainStores = await loadStoresFromChain(account.address);
-
-      setStores(chainStores); // ✅ FULL rehydration
-    } catch (e) {
-      console.error("Failed to load stores from chain", e);
-    }
+    const { loadStoresFromChain } = await import("./supplychainClient");
+    console.log("Loading stores from chain for owner:", account.address);
+    const chainStores = await loadStoresFromChain(account.address);
+    console.log("Loaded stores from chain:", chainStores);
+    setStores(chainStores);
   })();
-}, [account, setStores]);
+}, [account]);
+
 
   async function createShopChain() {
     if (!account) return alert("Connect wallet first");
