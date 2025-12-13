@@ -3,6 +3,7 @@ import { ConnectButton } from "@mysten/dapp-kit";
 import { Heading } from "@radix-ui/themes";
 import Admin from "./Admin";
 import Suppliers from "./Suppliers";
+import EscrowOrders from "./EscrowOrders";
 import logo from "./assets/logo.png";
 
 export type Item = {
@@ -10,6 +11,8 @@ export type Item = {
   name: string;
   price: number;
   quantity: number;
+  unitCost?: number;
+  discountAppliedPct?: number;
   supplier?: string;
 };
 
@@ -25,7 +28,7 @@ export type Store = {
 };
 
 function App() {
-  const [view, setView] = useState<"admin" | "suppliers">("admin");
+  const [view, setView] = useState<"admin" | "suppliers" | "escrow">("admin");
   const [stores, setStores] = useState<Store[]>([]);
 
   function addStore(name: string, shelfCount: number) {
@@ -40,7 +43,11 @@ function App() {
     ]);
   }
 
-  function addItemToShelf(storeId: string, shelfId: string, item: Item) {
+  function addItemToShelf(storeId: string, shelfId: string, items: Item | Item[]) {
+    const itemsArray = Array.isArray(items) ? items : [items];
+    
+    console.log(shelfId, itemsArray);
+
     setStores((prev) =>
       prev.map((store) =>
         store.id !== storeId
@@ -52,20 +59,19 @@ function App() {
                   ? shelf
                   : {
                       ...shelf,
-                      items: shelf.items.some(
-                        (it) =>
-                          it.name === item.name && it.price === item.price
-                      )
-                        ? shelf.items.map((it) =>
-                            it.name === item.name &&
-                            it.price === item.price
-                              ? {
-                                  ...it,
-                                  quantity: it.quantity + item.quantity,
-                                }
+                      items: itemsArray.reduce((acc, item) => {
+                        const existing = acc.find(
+                          (it) => it.name === item.name && it.price === item.price
+                        );
+                        if (existing) {
+                          return acc.map((it) =>
+                            it.name === item.name && it.price === item.price
+                              ? { ...it, quantity: it.quantity + item.quantity }
                               : it
-                          )
-                        : [...shelf.items, item],
+                          );
+                        }
+                        return [...acc, item];
+                      }, shelf.items),
                     }
               ),
             }
@@ -95,6 +101,12 @@ function App() {
           >
             Suppliers
           </button>
+          <button
+            className={`nav-item ${view === "escrow" ? "active" : ""}`}
+            onClick={() => setView("escrow")}
+          >
+            Escrow Orders
+          </button>
         </nav>
       </aside>
 
@@ -102,7 +114,11 @@ function App() {
       <main className="main">
         <header className="topbar">
           <Heading size="4">
-            {view === "admin" ? "Admin Dashboard" : "Suppliers"}
+            {view === "admin"
+              ? "Admin Dashboard"
+              : view === "suppliers"
+              ? "Suppliers"
+              : "Escrow Orders"}
           </Heading>
           <ConnectButton />
         </header>
@@ -111,11 +127,17 @@ function App() {
           <div className="card">
             {view === "admin" ? (
               <Admin stores={stores} setStores={setStores} />
-            ) : (
+            ) : view === "suppliers" ? (
               <Suppliers
                 stores={stores}
                 onBuy={(storeId, shelfId, item) =>
                   addItemToShelf(storeId, shelfId, item)
+                }
+              />
+            ) : (
+              <EscrowOrders
+                onItemsReleased={(storeId, shelfId, items) =>
+                  addItemToShelf(storeId, shelfId, items)
                 }
               />
             )}
