@@ -39,8 +39,30 @@ export default function Admin({
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Store name" style={{ padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
             <input type="number" min={1} value={shelves} onChange={(e: any) => setShelves(Number(e.target.value))} style={{ width: 80, padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
-            <Button onClick={() => { if (!name) return; onAddStore(name, Math.max(1, shelves)); setName(""); }}>Add Store</Button>
-            <Button onClick={createShopChain} style={{ marginLeft: 8 }}>Create Shop on-chain</Button>
+            {/* <Button onClick={() => { if (!name) return; onAddStore(name, Math.max(1, shelves)); setName(""
+            ); }}>Add Store</Button>
+            <Button onClick={createShopChain} style={{ marginLeft: 8 }}>Create Shop on-chain</Button> */}
+              <Button
+              onClick={async () => {
+                if (!name) return;
+
+                onAddStore(name, Math.max(1, shelves));
+
+                try {
+                  if (!account) return alert("Connect wallet first");
+                  const { createShopOnChain } = await import("./supplychainClient");
+                  const res = await createShopOnChain(signAndExecuteTransaction, name, shelves);
+                  alert("Transaction submitted: " + JSON.stringify(res));
+                  setName("");
+                  setShelves(3);
+                } catch (e: any) {
+                  alert("Error creating shop on-chain: " + (e?.message ?? String(e)));
+                }
+              }}
+              style={{ marginLeft: 8 }}
+            >
+              Create Shop on-chain
+            </Button>
           </label>
         </div>
       </div>
