@@ -83,11 +83,6 @@ body {
   gap: 16px;
 }
 
-.logo {
-  font-size: 18px;
-  font-weight: 700;
-}
-
 /* Navigation */
 .nav {
   display: flex;
@@ -145,6 +140,19 @@ body {
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.logo {
+  display: flex;
+  align-items: center; 
+  gap: 10px;           
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb; 
+  white-space: nowrap;
 }
 
 

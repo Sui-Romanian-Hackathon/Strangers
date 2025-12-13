@@ -3,6 +3,7 @@ import { ConnectButton } from "@mysten/dapp-kit";
 import { Heading } from "@radix-ui/themes";
 import Admin from "./Admin";
 import Suppliers from "./Suppliers";
+import logo from "./assets/logo.png";
 
 export type Item = {
   id: string;
@@ -76,7 +77,10 @@ function App() {
     <div className="app-shell">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="logo">📦 Inventory dApp</div>
+      <div className="logo">
+        <img src={logo} alt="Inventory Logo" width={40} height={40} />
+        <span className="logo-text">Smart Inventory</span>
+      </div>
 
         <nav className="nav">
           <button
