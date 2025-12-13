@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Box, Button, Heading, Text } from "@radix-ui/themes";
 import type { Store, Item } from "./App";
 import type { SupplierItem, BatchOffer } from "./types";
