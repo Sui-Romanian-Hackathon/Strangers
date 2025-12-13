@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ConnectButton } from "@mysten/dapp-kit";
 import { Heading } from "@radix-ui/themes";
 import Admin from "./Admin";
@@ -25,8 +25,14 @@ export type Store = {
 };
 
 function App() {
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"admin" | "suppliers">("admin");
   const [stores, setStores] = useState<Store[]>([]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500); // splash duration
+    return () => clearTimeout(timer);
+  }, []);
 
   function addStore(name: string, shelfCount: number) {
     const shelves: Shelf[] = Array.from({ length: shelfCount }).map((_, i) => ({
@@ -73,14 +79,24 @@ function App() {
     );
   }
 
+  // 🔹 Splash Screen
+  if (loading) {
+    return (
+      <div className="splash-screen">
+        <img src={logo} alt="Logo" className="splash-logo" />
+        <p className="splash-text">Loading ...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       {/* Sidebar */}
       <aside className="sidebar">
-      <div className="logo">
-        <img src={logo} alt="Inventory Logo" width={40} height={40} />
-        <span className="logo-text">Smart Inventory</span>
-      </div>
+        <div className="logo">
+          <img src={logo} alt="Inventory Logo" width={40} height={40} />
+          <span className="logo-text">Smart Inventory</span>
+        </div>
 
         <nav className="nav">
           <button
