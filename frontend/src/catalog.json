@@ -1,0 +1,50 @@
+[
+  {
+    "id": "apple",
+    "name": "Apple",
+    "category": "Fruits",
+    "unitCost": 0.3,
+    "baseRetailPrice": 0.5,
+    "qtyAvailable": 500,
+    "img": "apple",
+    "bulkDiscounts": [
+    { "minQty": 150, "discountPct": 3 },
+    { "minQty": 500, "discountPct": 7 }
+    ]
+  },
+  {
+    "id": "orange",
+    "name": "Orange",
+    "category": "Fruits",
+    "unitCost": 0.25,
+    "baseRetailPrice": 0.45,
+    "qtyAvailable": 400,
+    "img": "orange",
+    "bulkDiscounts": [
+    { "minQty": 200, "discountPct": 5 },
+    { "minQty": 500, "discountPct": 10 }
+    ]
+  },
+  {
+    "id": "milk",
+    "name": "Milk",
+    "category": "Dairy",
+    "unitCost": 0.9,
+    "baseRetailPrice": 1.5,
+    "qtyAvailable": 250,
+    "img": "milk",
+    "bulkDiscounts": [
+    { "minQty": 300, "discountPct": 5 },
+    { "minQty": 500, "discountPct": 10 }
+    ]
+  },
+  {
+    "id": "battery-pack",
+    "name": "Battery Pack",
+    "category": "Electronics",
+    "unitCost": 8,
+    "baseRetailPrice": 12.5,
+    "qtyAvailable": 100,
+    "img": "milk"
+  }
+]
