@@ -2,7 +2,7 @@
   --bg-1: #d4c8ea; /* deep purple */
   --bg-2: #d93d28; /* violet */
   --card:#ffffff;
-  --text:#ff8800; /* dark text for cards */
+  --text: rgba(16, 75, 211, 0.852); /* dark text for cards */
   --muted:#5b5870;
   --accent:#7c3aed;
   --glass: rgba(200, 56, 56, 0.996);
@@ -177,4 +177,3 @@ body {
   color: #555;
   letter-spacing: 1px;
 }
-
