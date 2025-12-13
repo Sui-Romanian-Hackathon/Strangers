@@ -4,6 +4,7 @@ import { Heading } from "@radix-ui/themes";
 import Admin from "./Admin";
 import Suppliers from "./Suppliers";
 import EscrowOrders from "./EscrowOrders";
+import Analytics from "./Analytics";
 import logo from "./assets/logo.png";
 
 export type Item = {
@@ -28,7 +29,7 @@ export type Store = {
 };
 
 function App() {
-  const [view, setView] = useState<"admin" | "suppliers" | "escrow">("admin");
+  const [view, setView] = useState<"admin" | "suppliers" | "escrow" | "analytics">("admin");
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState<Store[]>([]);
 
@@ -123,6 +124,12 @@ function App() {
           >
             Escrow Orders
           </button>
+          <button
+            className={`nav-item ${view === "analytics" ? "active" : ""}`}
+            onClick={() => setView("analytics")}
+          >
+            Analytics
+          </button>
         </nav>
       </aside>
 
@@ -134,7 +141,9 @@ function App() {
               ? "Admin Dashboard"
               : view === "suppliers"
               ? "Suppliers"
-              : "Escrow Orders"}
+              : view === "escrow"
+              ? "Escrow Orders"
+              : "Analytics"}
           </Heading>
           <ConnectButton />
         </header>
@@ -150,12 +159,14 @@ function App() {
                   addItemToShelf(storeId, shelfId, item)
                 }
               />
-            ) : (
+            ) : view === "escrow" ? (
               <EscrowOrders
                 onItemsReleased={(storeId, shelfId, items) =>
                   addItemToShelf(storeId, shelfId, items)
                 }
               />
+            ) : (
+              <Analytics />
             )}
           </div>
         </section>
