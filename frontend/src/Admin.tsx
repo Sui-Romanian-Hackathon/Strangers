@@ -49,7 +49,7 @@ export default function Admin({
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div>
-          <Heading size="3" style={{ margin: 0 }}>Admin — Stores</Heading>
+          <Heading size="3" style={{ margin: 0 }}>Stores</Heading>
           <div className="muted" style={{ fontSize: 13 }}>Create stores and visualize shelves</div>
         </div>
         <div>
@@ -92,7 +92,7 @@ export default function Admin({
                     alert("Error creating shop on-chain: " + (e?.message ?? String(e)));
                   }
               }}
-              style={{ marginLeft: 8 }}
+              style={{ marginLeft: 8 , backgroundColor: "#0f172a"}}
             >
               Create Shop on-chain
             </Button>

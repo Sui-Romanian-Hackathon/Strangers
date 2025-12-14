@@ -65,23 +65,23 @@ export default function Analytics() {
 
   return (
     <Box>
-      <Heading size="3" mb="4">
-        📊 AI Analytics & Strategy
-      </Heading>
-
       {/* Tab Navigation */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         <button
           className={`nav-btn ${activeTab === "timing" ? "primary" : ""}`}
           onClick={() => setActiveTab("timing")}
         >
-          🎯 Best Buy Timing
+          Best Buy Timing
         </button>
         <button
-          className={`nav-btn ${activeTab === "daily" ? "primary" : ""}`}
-          onClick={() => setActiveTab("daily")}
-        >
-          📈 Daily Decision
+        className={`nav-btn ${activeTab === "daily" ? "primary" : ""}`}
+        onClick={() => setActiveTab("daily")}
+        style={{
+          borderRadius: "7px",            
+          border: "1px solid rgb(229, 231, 235)"
+        }}
+      >
+          Daily Decision
         </button>
       </div>
 
@@ -159,7 +159,7 @@ export default function Analytics() {
               <Button
                 onClick={handleBestBuyDate}
                 disabled={timingLoading}
-                style={{ width: "100%", backgroundColor: "#3b82f6" }}
+                style={{ width: "100%", backgroundColor: "#0f172a" }}
               >
                 {timingLoading ? "Analyzing..." : "Analyze Timing"}
               </Button>
@@ -294,7 +294,7 @@ export default function Analytics() {
               <Button
                 onClick={handleDailyDecision}
                 disabled={dailyLoading}
-                style={{ width: "100%", backgroundColor: "#8b5cf6" }}
+                style={{ width: "100%", backgroundColor: "#0f172a" }}
               >
                 {dailyLoading ? "Deciding..." : "Get Decision"}
               </Button>

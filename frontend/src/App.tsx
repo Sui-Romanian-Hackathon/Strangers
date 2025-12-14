@@ -128,7 +128,7 @@ function App() {
             className={`nav-item ${view === "analytics" ? "active" : ""}`}
             onClick={() => setView("analytics")}
           >
-            Analytics
+            Analytics & Strategy
           </button>
         </nav>
       </aside>
@@ -143,7 +143,7 @@ function App() {
               ? "Suppliers"
               : view === "escrow"
               ? "Escrow Orders"
-              : "Analytics"}
+              : "Analytics & Strategy"}
           </Heading>
           <ConnectButton />
         </header>

@@ -225,7 +225,6 @@ export default function Suppliers({
 
   return (
     <Box>
-      <Heading size="3" mb="2">Suppliers</Heading>
 
       {/* Wallet Balance Section */}
       {account?.address && (
@@ -325,7 +324,7 @@ export default function Suppliers({
       </div>
     </div>
 
-    <Button onClick={() => setExpanded(expanded === sup.id ? null : sup.id)}>
+    <Button style={{ backgroundColor: "#0f172a" }} onClick={() => setExpanded(expanded === sup.id ? null : sup.id)}>
       {expanded === sup.id ? "Close" : "Buy"}
     </Button>
 
