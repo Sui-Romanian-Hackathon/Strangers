@@ -52,14 +52,15 @@ export default function Admin({
           <Heading size="3" style={{ margin: 0 }}>Stores</Heading>
           <div className="muted" style={{ fontSize: 13 }}>Create stores and visualize shelves</div>
         </div>
-        <div>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Store name" style={{ padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
-            <input type="number" min={1} value={shelves} onChange={(e: any) => setShelves(Number(e.target.value))} style={{ width: 80, padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
+        {account && (
+          <div>
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input value={name} onChange={(e: any) => setName(e.target.value)} placeholder="Store name" style={{ padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
+              <input type="number" min={1} value={shelves} onChange={(e: any) => setShelves(Number(e.target.value))} style={{ width: 80, padding: 8, borderRadius: 8, border: "1px solid #e6e9ee" }} />
 
-              <Button
-              onClick={async () => {
-                if (!name) return;
+                <Button
+                onClick={async () => {
+                  if (!name) return;
 
                 try {
                     if (!account) return alert("Connect wallet first");
@@ -98,6 +99,7 @@ export default function Admin({
             </Button>
           </label>
         </div>
+        )}
       </div>
 
       <div>
