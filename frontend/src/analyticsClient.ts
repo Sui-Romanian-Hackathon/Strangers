@@ -11,15 +11,29 @@ export interface BuyTimingResult {
   expected_profit: number;
 }
 
-export interface DailyDecisionRequest {
-  daily_demand: number;
+export interface OptimizedDecisionRequest {
+  item: string;
   stock: number;
-  holiday: boolean;
+  x: number;
+  discount_x: number;
+  y: number;
+  discount_x_plus_y: number;
+  client_id?: string;
+  lookback_days?: number;
+  horizon_days?: number;
+  alpha_observed?: number;
+  emergency_days_cover?: number;
 }
 
-export interface DailyDecisionResult {
-  action: string;
-}
+export type OptimizedDecisionResult = {
+  item: string;
+  as_of: string;
+  decision: "BUY_NOW" | "WAIT" | "HOLD" | "EMERGENCY_BUY";
+  reason?: string;
+  observed_daily_velocity: number;
+  scenarios: any;
+};
+
 
 export async function getBestBuyDate(
   req: BuyTimingRequest
@@ -33,10 +47,10 @@ export async function getBestBuyDate(
   return res.json();
 }
 
-export async function getDailyDecision(
-  req: DailyDecisionRequest
-): Promise<DailyDecisionResult> {
-  const res = await fetch(`${API_URL}/strategy/daily-decision`, {
+export async function getOptimizedDecision(
+  req: OptimizedDecisionRequest
+): Promise<OptimizedDecisionResult> {
+  const res = await fetch(`${API_URL}/strategy/optimized-decision`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),

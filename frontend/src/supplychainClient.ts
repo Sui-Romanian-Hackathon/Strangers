@@ -166,8 +166,7 @@ export async function addItemToChain(
           resolve(result);
         },
         onError: (err: any) => {
-          console.error("Add item transaction error:", JSON.stringify(err, null, 2));
-          console.error("Full error object:", err);
+          console.error("Add item transaction error:", err);
           reject(err);
         },
       }
