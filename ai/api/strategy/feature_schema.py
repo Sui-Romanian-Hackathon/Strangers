@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parents[1]  # project root
+BASE_DIR = Path(__file__).resolve().parents[1] 
 
 def load_feature_cols():
     csv_path = BASE_DIR / "app" / "sales_transactions.csv"

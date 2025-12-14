@@ -1,12 +1,12 @@
 import numpy as np
 
-HOLDING_COST_PER_DAY = 0.005  # 0.5% per day
+HOLDING_COST_PER_DAY = 0.005  
 
 def supplier_price(item: str, date):
     base = 0.30
 
     if date.day >= 25:
-        return round(base * 0.80, 2)  # 20% discount
+        return round(base * 0.80, 2) 
 
     if date.month == 11:
         return round(base * 0.75, 2)
